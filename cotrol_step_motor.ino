@@ -1,7 +1,10 @@
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 
-// pins frist driver
+// motor speed values
+const float MOTOR_SPEED = 101.1;
+
+// pins first driver
 const int STEP_PIN = 10;
 const int DIRECTION_PIN = 9;
 
@@ -9,153 +12,140 @@ const int DIRECTION_PIN = 9;
 const int STEP_PIN_2 = 3;
 const int DIRECTION_PIN_2 = 5;
 
-//pins third driver
+// pins third driver
 const int STEP_PIN_3 = 11;
 const int DIRECTION_PIN_3 = 6;
 
-// const int LEFT_PIN  0;
-// const int RIGHT_PIN 0;
+// pins switches
+const int MOTOR1_SWITCH_PIN = 4;
+const int MOTOR2_SWITCH_PIN = 7;
+const int MOTOR3_SWITCH_PIN = 8;
 
-//initial vulues
-const float VOLT_OUT = 3; // Change voltage of output pin, max 5 = HIGH
-const int PWM_OUT_VOLTAGE_LEVEL = 255/5*VOLT_OUT; 
-int BUTTON_INITITAL_STATE = 0;
+// pins buttons
+const int MOTOR1_BUTTON_PIN = 2;
+const int MOTOR2_BUTTON_PIN = 12;
+const int MOTOR3_BUTTON_PIN = 13;
+
+// init values for buttons and switches
+int button1State = 0;
+int switch1State = 0;
+int button2State = 0;
+int switch2State = 0;
+int button3State = 0;
+int switch3State = 0;
+
+/**
+ * ToDO init position
+ * 
+ */
+// void init (long positions[]) {
+ 
+// }
+
+/**
+ * ToDO draw function 
+ * add el to array
+ * 
+ */
+
+void moveToPos(AccelStepper& obj, int dir, int buttonState, bool maxPosEnable = false, long maxPos = 230)  
+{
+    if(maxPosEnable == false){
+        obj.setCurrentPosition(0);
+    }
+
+    if (dir == LOW)
+    {
+        if (buttonState == HIGH && obj.currentPosition() != 250 && obj.currentPosition() <= 0)
+        {
+            maxPos = -maxPos;
+            obj.moveTo(maxPos);
+            obj.setSpeed(MOTOR_SPEED);
+            obj.runSpeedToPosition();
+            Serial.println(obj.currentPosition());
+        }
+    }
+    else if (dir == HIGH)
+    {
+        if (buttonState == HIGH && obj.currentPosition() != 250 && obj.currentPosition() <= 0)
+        {
+            obj.moveTo(maxPos);
+            obj.setSpeed(MOTOR_SPEED);
+            obj.runSpeedToPosition();
+            Serial.println(obj.currentPosition());
+        } 
+    }
+}
 
 // motors initialization 
 AccelStepper motor(AccelStepper::DRIVER, STEP_PIN, DIRECTION_PIN);
 AccelStepper motor2(AccelStepper::DRIVER, STEP_PIN_2, DIRECTION_PIN_2);
 AccelStepper motor3(AccelStepper::DRIVER, STEP_PIN_3, DIRECTION_PIN_3);
 
+// multiple motor controlling
 MultiStepper steppers;
-
-//Test without buttons
-int spd = 10.0;    // The current speed in steps/second
-int sign = 1;      // Either 1, 0 or -1
 
 void setup() {
 
-motor.setMaxSpeed(101.0);
-motor.setSpeed(0.0);
+    // Set up the three button inputs, with pullups
+    pinMode(MOTOR1_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(MOTOR2_BUTTON_PIN, INPUT_PULLUP);
+    pinMode(MOTOR3_BUTTON_PIN, INPUT_PULLUP);
 
-motor2.setMaxSpeed(101.0);
-motor2.setSpeed(0.0);
+    // Set up the three button inputs, with pullups
+    pinMode(MOTOR1_SWITCH_PIN, INPUT_PULLUP);
+    pinMode(MOTOR2_SWITCH_PIN, INPUT_PULLUP);
+    pinMode(MOTOR3_SWITCH_PIN, INPUT_PULLUP);
 
-motor3.setMaxSpeed(101.0);
-motor3.setSpeed(0.0);
+    // Set up init @motor properties
+    motor.setMaxSpeed(MOTOR_SPEED);
+    motor.setSpeed(0.0);
+    motor.setCurrentPosition(0);
 
-steppers.addStepper(motor);
-steppers.addStepper(motor2);
-steppers.addStepper(motor3);
+    // Set up init @motor2 properties
+    motor2.setMaxSpeed(MOTOR_SPEED);
+    motor2.setSpeed(0.0);
+    motor.setCurrentPosition(0);
 
- // Set up the three button inputs, with pullups
-//pinMode(LEFT_PIN, INPUT_PULLUP);
-//pinMode(RIGHT_PIN, INPUT_PULLUP);
+    // Set up init @motor3 properties
+    motor3.setMaxSpeed(MOTOR_SPEED);
+    motor3.setSpeed(0.0);
+    motor.setCurrentPosition(0);
 
-
-Serial.begin(9600);
-Serial.println("Stepper test!");
+    // sync tree motors for leater use
+    steppers.addStepper(motor);
+    steppers.addStepper(motor2);
+    steppers.addStepper(motor3);
+    
+    // start serial monitoring
+    Serial.begin(9600);
+    Serial.println("Stepper test!");
+    
 }
 
 void loop() {
-  
-  char c;
-  int currPos;
-  long positions[3];
+    //for later use
+    //long positions[3];
 
-//  // switch states
-//  if (digitalRead(LEFT_PIN) == 0) {
-//    sign = 1;
-//  }
-//  else if (digitalRead(RIGHT_PIN) == 0) {    
-//    sign = -1;
-//  }
-  
-  // move values .... toDo
-  // positions[0] = 200;
-  // positions[1] = 200;
-  // positions[2] = 200
-  // steppers.moveTo(positions);
-  // steppers.runSpeedToPosition(); // Blocks until all are in position
-  // delay(1000);
-  
-  //console conrol comands
-  if(Serial.available()) {
-    c = Serial.read();
-    if (c == 'a') {  // forward
-      motor.setCurrentPosition(0);
-      positions[0] = 20;
-      positions[1] = 0;      
-      positions[2] = 0;      
-      steppers.moveTo(positions);
-      steppers.runSpeedToPosition(); // Blocks until all are in position
-      delay(1000);
-      Serial.println("Now is MOTOR1 LEFT position");
-    }
-    if (c == 'b') {  // reverse
-      motor.setCurrentPosition(0);
-      positions[0] = -20;
-      positions[1] = 0;      
-      positions[2] = 0; 
-      steppers.moveTo(positions);
-      steppers.runSpeedToPosition(); // Blocks until all are in position
-      delay(1000);
-      Serial.println("Now is MOTOR1 RIGHT position");
-    }
-    if (c == 'c') {  // forward
-      motor2.setCurrentPosition(0);
-      positions[0] = 0;
-      positions[1] = 20;      
-      positions[2] = 0;      
-      steppers.moveTo(positions);
-      steppers.runSpeedToPosition(); // Blocks until all are in position
-      delay(1000);
-      Serial.println("Now is MOTOR1 LEFT position");
-    }
-    if (c == 'd') {  // reverse
-      motor2.setCurrentPosition(0);
-      positions[0] = 0;
-      positions[1] = -20;      
-      positions[2] = 0; 
-      steppers.moveTo(positions);
-      steppers.runSpeedToPosition(); // Blocks until all are in position
-      delay(1000);
-      Serial.println("Now is MOTOR1 RIGHT position");
-    }
-    if (c == 'e') {  // forward
-      motor3.setCurrentPosition(0);
-      positions[0] = 0;
-      positions[1] = 0;      
-      positions[2] = 20;      
-      steppers.moveTo(positions);
-      steppers.runSpeedToPosition(); // Blocks until all are in position
-      delay(1000);
-      Serial.println("Now is MOTOR3 LEFT position");
-    }
-    if (c == 'f') {  // reverse
-      motor3.setCurrentPosition(0);
-      positions[0] = 0;
-      positions[1] = 0;      
-      positions[2] = -20; 
-      steppers.moveTo(positions);
-      steppers.runSpeedToPosition(); // Blocks until all are in position
-      delay(1000);
-      Serial.println("Now is MOTOR3 RIGHT position");
-    }
+    //button state values 1 or 0, HIGH or LOW
+    button1State = digitalRead(MOTOR1_BUTTON_PIN);
+    switch1State = digitalRead(MOTOR1_SWITCH_PIN);
+    button2State = digitalRead(MOTOR2_BUTTON_PIN);
+    switch2State = digitalRead(MOTOR2_SWITCH_PIN);
+    button3State = digitalRead(MOTOR3_BUTTON_PIN);
+    switch3State = digitalRead(MOTOR3_SWITCH_PIN);
 
-    // speed 
-    // if (c == 's') {  // stop
-    //   sign = 0;
-    //   Serial.println("STOP!");
-    // }
-    // if (c == '1') {  // super slow
-    //   spd = 10.0;
-    //   Serial.println("Now is super slow speed");
-    // }
-    // if (c == '2') {  // medium 
-    //   spd = 100.0;
-    //   Serial.println("Now is medium speed");
-    // }
-    // //steppers.setSpeed(sign * spd); // simple steppers movements
-  }
-  // steppers.runSpeedToPosition();
+    /**
+    * function call 
+    * @params:
+    *   @AccelStepper& obj, 
+    *   @int dir, 
+    *   @int buttonState, 
+    *   @bool maxPosEnable = false, 
+    *   @long maxPos = 230
+    */
+    moveToPos(motor, switch1State, button1State);
+    moveToPos(motor2, switch2State, button2State);
+    moveToPos(motor3, switch3State, button3State);
+   
 }
